@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import { handleDialogOpenFileOptions } from './main'
+import { HandleDialogOpenFileOptions } from './main'
 
 export const api = {
   /**
@@ -17,8 +17,13 @@ export const api = {
   selectDirectory: (): Promise<string | undefined> =>
     ipcRenderer.invoke('dialog:openDirectory'),
   selectFile: (
-    opts?: handleDialogOpenFileOptions
+    opts?: HandleDialogOpenFileOptions
   ): Promise<string | undefined> => ipcRenderer.invoke('dialog:openFile', opts),
+
+  authenticate: (clientSecretFilePath: string): Promise<void> =>
+    ipcRenderer.invoke('avu:authenticate', clientSecretFilePath),
+
+  getStoredToken: () => ipcRenderer.invoke('avu:getStoredToken'),
 
   /**
    * Provide an easier way to listen to events

@@ -6,6 +6,7 @@ import {
   IpcMainInvokeEvent,
 } from 'electron'
 import { FileFilter } from 'electron/main'
+import { GoogleAuth } from './avu-lib'
 
 let mainWindow: BrowserWindow | null
 
@@ -16,6 +17,8 @@ declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string
 //   process.env.NODE_ENV === 'production'
 //     ? process.resourcesPath
 //     : app.getAppPath()
+
+let auth: GoogleAuth | undefined
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -49,6 +52,16 @@ async function registerListeners() {
 async function registerHandlers() {
   ipcMain.handle('dialog:openDirectory', handleDialogOpenDirectory)
   ipcMain.handle('dialog:openFile', handleDialogOpenFile)
+
+  ipcMain.handle('avu:authenticate', async (_, clientSecretFilePath) => {
+    auth = new GoogleAuth({ clientSecretFilePath })
+    await auth.authenticate()
+  })
+
+  ipcMain.handle('avu:getStoredToken', async () => {
+    if (!auth) return
+    return await auth.getStoredToken()
+  })
 }
 
 const handleDialogOpenDirectory = async () => {
@@ -59,7 +72,7 @@ const handleDialogOpenDirectory = async () => {
   if (!canceled) return filePaths[0]
 }
 
-export interface handleDialogOpenFileOptions {
+export interface HandleDialogOpenFileOptions {
   filters?: FileFilter[]
   title?: string
   buttonLabel?: string
@@ -67,7 +80,7 @@ export interface handleDialogOpenFileOptions {
 
 const handleDialogOpenFile = async (
   _: IpcMainInvokeEvent,
-  opts?: handleDialogOpenFileOptions
+  opts?: HandleDialogOpenFileOptions
 ) => {
   const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow!, {
     properties: ['openFile'],
